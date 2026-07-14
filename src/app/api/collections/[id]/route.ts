@@ -1,6 +1,8 @@
 import { withHandler } from "@/lib/http";
 import { collectionController } from "@/controllers/collection.controller";
 
+export const runtime = 'nodejs';
+
 export const GET = withHandler(async (req, ctx) => {
   const { id } = await (ctx as { params: Promise<{ id: string }> }).params;
   return collectionController.get(req, { id });

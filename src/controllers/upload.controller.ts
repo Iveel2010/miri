@@ -2,7 +2,7 @@ import { parseForm } from "@/lib/http";
 import { parseJson } from "@/lib/http";
 import { ApiResponse } from "@/lib/response";
 import { requireRole, requireUser } from "@/lib/auth";
-import { uploadMany, deleteImage } from "@/lib/upload";
+import { uploadImage, uploadMany, deleteImage } from "@/lib/upload";
 
 // ============================================================================
 // Upload controller — Cloudinary-compatible image handling. Supports multiple
@@ -15,10 +15,12 @@ export const uploadController = {
     requireUser(req);
     const { files } = await parseForm(req);
     if (!files.length) return ApiResponse.fail("No files provided", 400, "BAD_REQUEST");
-    const buffers = await Promise.all(
-      files.map(async (f) => Buffer.from(await f.arrayBuffer())),
+    const results = await Promise.all(
+      files.map(async (f) => {
+        const buffer = Buffer.from(await f.arrayBuffer());
+        return uploadImage(buffer, { type: f.type });
+      }),
     );
-    const results = await uploadMany(buffers);
     return ApiResponse.created(results, "Uploaded");
   },
 

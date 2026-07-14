@@ -1,6 +1,8 @@
 import { withHandler } from "@/lib/http";
 import { siteSettingController } from "@/controllers/site-setting.controller";
 
+export const runtime = 'nodejs';
+
 /** GET /api/site-settings/hero */
 export const GET = withHandler(() => siteSettingController.getHero());
 

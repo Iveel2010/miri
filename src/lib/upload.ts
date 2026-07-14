@@ -1,4 +1,3 @@
-import { v2 as cloudinary } from "cloudinary";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
@@ -29,14 +28,7 @@ const DRIVER = CONFIGURED_DRIVER === "cloudinary" && !cloudName
   ? "local"
   : CONFIGURED_DRIVER;
 
-if (DRIVER === "cloudinary") {
-  cloudinary.config({
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-    secure: true,
-  });
-}
+const UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET;
 
 export interface UploadResult {
   url: string;
@@ -54,7 +46,7 @@ function extractPublicId(url: string): string {
 
 export async function uploadImage(
   input: Buffer | string,
-  opts: { folder?: string; transformation?: Record<string, unknown> } = {},
+  opts: { folder?: string; transformation?: Record<string, unknown>; type?: string } = {},
 ): Promise<UploadResult> {
   const folder = opts.folder ?? FOLDER;
 
@@ -73,23 +65,32 @@ export async function uploadImage(
   }
 
   if (DRIVER === "cloudinary") {
-    // Cloudinary's SDK treats non-URL strings as local file paths. Its
-    // `isRemoteUrl` check only accepts base64 payloads made of
-    // [A-Za-z0-9/+=], so a malformed/huge data URI slips through and the SDK
-    // ends up calling fs.open() on the whole string -> ENAMETOOLONG (500).
-    // Always decode to a Buffer and re-wrap as a clean data URI so the SDK
-    // uploads it as a remote base64 payload.
     const buffer = Buffer.isBuffer(input)
       ? input
       : Buffer.from(input.replace(/^data:.*;base64,/, ""), "base64");
-    const resource = `data:image/*;base64,${buffer.toString("base64")}`;
+    const mimeType = opts.type || "image/png";
+    const base64 = buffer.toString("base64");
+    const dataUri = `data:${mimeType};base64,${base64}`;
 
-    const result = await cloudinary.uploader.upload(resource, {
-      folder,
-      overwrite: false,
-      resource_type: "image",
-      transformation: opts.transformation ?? { quality: "auto", fetch_format: "auto" },
+    const form = new FormData();
+    form.append("file", dataUri);
+    form.append("upload_preset", UPLOAD_PRESET || "miri.mn");
+    form.append("folder", folder);
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: form as unknown as BodyInit,
     });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Cloudinary upload failed (${res.status}): ${text}`);
+    }
+
+    const result = (await res.json()) as {
+      secure_url: string;
+      public_id: string;
+    };
 
     return { url: result.secure_url, publicId: result.public_id };
   }
@@ -114,7 +115,21 @@ export async function deleteImage(publicIdOrUrl: string): Promise<void> {
     return;
   }
   if (!isCloudinaryUrl(publicIdOrUrl)) return;
-  await cloudinary.uploader
-    .destroy(extractPublicId(publicIdOrUrl))
-    .catch(() => undefined);
+
+  const publicId = extractPublicId(publicIdOrUrl);
+  if (!publicId) return;
+
+  const form = new FormData();
+  form.append("public_id", publicId);
+  form.append("upload_preset", UPLOAD_PRESET || "miri.mn");
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+    method: "POST",
+    body: form as unknown as BodyInit,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Cloudinary delete failed (${res.status}): ${text}`);
+  }
 }
