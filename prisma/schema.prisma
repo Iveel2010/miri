@@ -1,0 +1,403 @@
+// ============================================================================
+// Prisma schema — Art Gallery backend
+// PostgreSQL provider. Run `npm run prisma:migrate` to apply.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  ARTIST
+  CUSTOMER
+}
+
+enum ArtworkStatus {
+  DRAFT // saved by artist, not visible publicly
+  PENDING // submitted, awaiting admin approval
+  PUBLISHED // live and purchasable
+  REJECTED // declined by admin
+  SOLD // purchased
+  ARCHIVED // hidden by artist
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PurchaseRequestStatus {
+  NEW
+  CONTACTED
+  RESERVED
+  SOLD
+  CANCELLED
+}
+
+// ---------------------------------------------------------------------------
+// User
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String // bcrypt hash (never returned to client)
+  avatar    String?
+  role      Role     @default(CUSTOMER)
+  verified  Boolean  @default(false) // artist verification badge
+  bio       String?
+
+  // ---------------------------------------------------------------------------
+  // Artist contact information (used by the "Contact Artist to Purchase" flow).
+  // Visible on artwork pages only when the artist enables the matching toggle.
+  // ---------------------------------------------------------------------------
+  phone                  String? // E.164 / display format
+  facebook               String? // full URL or @handle
+  instagram              String? // full URL or @handle
+  telegram               String? // username without the leading @
+  whatsapp               String? // phone number in international format
+  location               String?
+  preferredContactMethod String? // PHONE | EMAIL | FACEBOOK | INSTAGRAM | TELEGRAM | WHATSAPP
+  responseTime           String? // free text, e.g. "Usually replies within 1 hour"
+  showPhone              Boolean @default(false)
+  showEmail              Boolean @default(true)
+
+  // Email verification
+  emailVerified    DateTime?
+  verificationToken String?
+  // Password reset
+  resetToken        String?
+  resetTokenExpires DateTime?
+  // Refresh-token rotation: bump to invalidate all issued tokens
+  tokenVersion Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  artworks     Artwork[]
+  collections  Collection[]
+  orders       Order[]
+  favorites    Favorite[]
+  likes        Like[]
+  reviews      Review[]
+  notifications Notification[]
+  inquiries    ArtworkInquiry[]
+  purchaseRequests PurchaseRequest[]
+
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Category
+// ---------------------------------------------------------------------------
+
+model Category {
+  id       String @id @default(cuid())
+  name     String @unique
+  slug     String @unique
+  icon     String?
+  sortOrder Int  @default(0)
+
+  artworks Artwork[]
+
+  @@index([slug])
+}
+
+// ---------------------------------------------------------------------------
+// Artwork
+// ---------------------------------------------------------------------------
+
+model Artwork {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  image       String // primary image url
+  images      String[] // gallery images
+  price       Float
+  categoryId  String?
+  medium      String?
+  width       Float? // cm
+  height      Float? // cm
+  year        Int?
+  dimensions  String? // human-readable, e.g. "80 × 120 см"
+  status      ArtworkStatus @default(DRAFT)
+  availability String? @default("AVAILABLE") // AVAILABLE | COMMISSION_ONLY | SOLD
+  views       Int      @default(0)
+  // Denormalized counters for "popularity" sorting / analytics
+  favoritesCount Int @default(0)
+  likesCount     Int @default(0)
+  isFeatured     Boolean @default(false)
+  artistId    String
+
+  artist   User      @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  collections ArtworkCollection[]
+  favorites   Favorite[]
+  likes       Like[]
+  reviews     Review[]
+  orderItems  OrderItem[]
+  inquiries   ArtworkInquiry[]
+  purchaseRequests PurchaseRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([artistId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([price])
+}
+
+// ---------------------------------------------------------------------------
+// Collection (artist-curated groupings)
+// ---------------------------------------------------------------------------
+
+model Collection {
+  id          String  @id @default(cuid())
+  title       String
+  slug        String
+  description String?
+  coverImage  String?
+  userId      String
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artworks  ArtworkCollection[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Artwork <-> Collection join (explicit for ordering control)
+// ---------------------------------------------------------------------------
+
+model ArtworkCollection {
+  artworkId    String
+  collectionId String
+  position     Int @default(0)
+
+  artwork   Artwork   @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([artworkId, collectionId])
+  @@index([collectionId])
+}
+
+// ---------------------------------------------------------------------------
+// Favorite (user bookmarks an artwork)
+// ---------------------------------------------------------------------------
+
+model Favorite {
+  userId    String
+  artworkId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@id([userId, artworkId])
+  @@index([artworkId])
+}
+
+// ---------------------------------------------------------------------------
+// Like (lightweight engagement on an artwork)
+// ---------------------------------------------------------------------------
+
+model Like {
+  userId    String
+  artworkId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@id([userId, artworkId])
+  @@index([artworkId])
+}
+
+// ---------------------------------------------------------------------------
+// Review (customer rates an artwork)
+// ---------------------------------------------------------------------------
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int // 1..5
+  comment   String?
+  userId    String
+  artworkId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artworkId])
+  @@index([artworkId])
+}
+
+// ---------------------------------------------------------------------------
+// Order
+// ---------------------------------------------------------------------------
+
+model Order {
+  id           String       @id @default(cuid())
+  userId       String
+  total        Float
+  status       OrderStatus  @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+  // Optional payment provider reference
+  paymentRef   String?
+  shippingAddress String?
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// OrderItem (price/title snapshot at purchase time)
+// ---------------------------------------------------------------------------
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  artworkId String
+  title     String
+  image     String?
+  price     Float
+  quantity  Int    @default(1)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([artworkId])
+}
+
+
+// ---------------------------------------------------------------------------
+// Notification (per user)
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // e.g. ORDER_PLACED, NEW_MESSAGE, ARTWORK_APPROVED
+  title     String
+  body      String?
+  read      Boolean  @default(false)
+  relatedId String? // e.g. orderId / artworkId
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+}
+
+// ---------------------------------------------------------------------------
+// AnalyticsEvent (raw event log powering the analytics service)
+// ---------------------------------------------------------------------------
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String // VIEW_ARTWORK | VISIT | SEARCH | FAVORITE | PURCHASE
+  userId    String?
+  artworkId String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// ArtworkInquiry (customer -> artist, about a specific artwork)
+// ---------------------------------------------------------------------------
+
+model ArtworkInquiry {
+  id          String   @id @default(cuid())
+  senderName  String // customer display name (no account required)
+  senderEmail String // customer contact email
+  body        String // the message
+  read        Boolean  @default(false)
+  artworkId   String
+  artistId    String
+  artwork     Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artist      User     @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([artistId, read])
+  @@index([artworkId])
+}
+
+// ---------------------------------------------------------------------------
+// PurchaseRequest (public request to purchase an artwork, offline flow)
+// ---------------------------------------------------------------------------
+
+model PurchaseRequest {
+  id          String               @id @default(cuid())
+  buyerName   String
+  buyerPhone  String
+  buyerEmail  String?
+  message     String?
+  status      PurchaseRequestStatus @default(NEW)
+  artworkId   String
+  artistId    String
+  artwork     Artwork              @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artist      User                 @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([artistId, status])
+  @@index([artworkId])
+}
