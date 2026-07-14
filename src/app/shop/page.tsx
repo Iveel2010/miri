@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { serverApi, serverApiList } from "@/lib/server-api";
-import { toArtworks } from "@/lib/mappers";
+import { toArtworks, toArtwork } from "@/lib/mappers";
 import ShopHero from "@/components/shop/ShopHero";
 import ShopFeatured from "@/components/shop/ShopFeatured";
 import ShopCurated, { type ShopCollection } from "@/components/shop/ShopCurated";
@@ -46,12 +46,15 @@ export default async function ShopPage() {
   const artistWorks: ShopArtistWork[] = artist
     ? list.items
         .filter((a) => a.artist.id === artist.id)
-        .map((a) => ({
-          id: a.id,
-          title: a.title,
-          year: String(a.year ?? ""),
-          image: a.image,
-        }))
+        .map((a) => {
+          const mapped = toArtwork(a);
+          return {
+            id: a.id,
+            title: a.title,
+            year: String(a.year ?? ""),
+            image: mapped.image,
+          };
+        })
     : [];
 
   const shopCollections: ShopCollection[] = collections.items.map((c, i) => ({

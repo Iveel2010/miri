@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import gsap from "gsap";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary";
 import type { ApiArtwork } from "@/types/api";
 
 interface FeaturedCarouselProps {
@@ -150,7 +151,7 @@ export default function FeaturedCarousel({ items }: FeaturedCarouselProps) {
             >
               <div className="relative h-full w-full overflow-hidden rounded-3xl bg-gray-900 shadow-2xl shadow-accent/20 ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-[1.02]">
                 <Image
-                  src={art.image}
+                  src={optimizeCloudinaryUrl(art.image)}
                   alt={`${art.title} — ${art.artist.name}-ийн`}
                   fill
                   sizes="288px"

@@ -6,20 +6,34 @@ import { randomUUID } from "crypto";
 const CONFIGURED_DRIVER = (process.env.UPLOAD_DRIVER ?? "cloudinary").toLowerCase();
 const FOLDER = process.env.CLOUDINARY_FOLDER ?? "art-gallery";
 
-/**
- * Effective driver. When `cloudinary` is selected but its credentials are
- * missing, fall back to local disk storage so the app still works without
- * external configuration (e.g. local development).
- */
-const DRIVER = CONFIGURED_DRIVER === "cloudinary" && !process.env.CLOUDINARY_CLOUD_NAME
+function parseCloudinaryUrl(url: string): { cloudName: string; apiKey: string; apiSecret: string } | null {
+  const m = url.match(/^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/);
+  if (!m) return null;
+  return { apiKey: m[1], apiSecret: m[2], cloudName: m[3] };
+}
+
+let cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+let apiKey = process.env.CLOUDINARY_API_KEY;
+let apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+if (!cloudName && process.env.CLOUDINARY_URL) {
+  const parsed = parseCloudinaryUrl(process.env.CLOUDINARY_URL);
+  if (parsed) {
+    cloudName = parsed.cloudName;
+    apiKey = parsed.apiKey;
+    apiSecret = parsed.apiSecret;
+  }
+}
+
+const DRIVER = CONFIGURED_DRIVER === "cloudinary" && !cloudName
   ? "local"
   : CONFIGURED_DRIVER;
 
 if (DRIVER === "cloudinary") {
   cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
     secure: true,
   });
 }

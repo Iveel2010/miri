@@ -5,11 +5,13 @@ import type {
   ApiCategoryRef,
   Paginated,
 } from "@/types/api";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary";
 
 // ============================================================================
 // Map backend API shapes -> frontend UI types. The backend returns
 // `artist`/`category` as objects and `year`/`price` as numbers; the UI
 // components expect flattened strings, so we adapt here in one place.
+// Cloudinary URLs are optimized with auto quality/format transformations.
 // ============================================================================
 
 export function toArtwork(a: ApiArtwork): Artwork {
@@ -18,7 +20,7 @@ export function toArtwork(a: ApiArtwork): Artwork {
     title: a.title,
     artist: a.artist?.name ?? "Unknown",
     category: a.category?.name ?? "—",
-    image: a.image,
+    image: optimizeCloudinaryUrl(a.image),
     medium: a.medium ?? undefined,
     year: a.year != null ? String(a.year) : undefined,
     description: a.description ?? undefined,
@@ -31,7 +33,7 @@ export function toArtwork(a: ApiArtwork): Artwork {
     price: a.price,
     slug: a.slug,
     status: a.status,
-    images: a.images?.length ? a.images : [a.image],
+    images: a.images?.length ? a.images.map(optimizeCloudinaryUrl) : [optimizeCloudinaryUrl(a.image)],
     featured: a.isFeatured,
   };
 }

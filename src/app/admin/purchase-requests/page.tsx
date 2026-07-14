@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-client";
 import { apiGet, apiPatch, apiDelete } from "@/lib/api-client";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary";
 import type { ApiPurchaseRequestList } from "@/types/api";
 import Reveal from "@/components/Reveal";
 
@@ -253,7 +254,7 @@ export default function AdminPurchaseRequestsPage() {
                 {req.artwork && (
                   <Link href={`/artwork/${req.artwork.id}`} target="_blank" rel="noopener noreferrer" className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-background">
                     <img
-                      src={req.artwork.image}
+                      src={optimizeCloudinaryUrl(req.artwork.image)}
                       alt={req.artwork.title}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />

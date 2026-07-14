@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/layout";
 import { apiList, apiGet, apiPost, apiPatch, apiDelete, ApiError } from "@/lib/api-client";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary";
 import type { ApiArtwork, ApiCategory, PaginationMeta } from "@/types/api";
 
 const STATUSES = ["DRAFT", "PENDING", "PUBLISHED", "REJECTED", "SOLD", "ARCHIVED"] as const;
@@ -375,7 +376,7 @@ export default function AdminArtworksPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {art.image ? (
-                          <img src={art.image} alt="" className="h-10 w-10 rounded-lg object-cover ring-1 ring-border" />
+                          <img src={optimizeCloudinaryUrl(art.image)} alt="" className="h-10 w-10 rounded-lg object-cover ring-1 ring-border" />
                         ) : (
                           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-shop-beige text-primary/30 ring-1 ring-border">
                             —
