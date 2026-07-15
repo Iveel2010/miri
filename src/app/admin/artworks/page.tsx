@@ -32,17 +32,25 @@ export default function AdminArtworksPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
 
-  const handleImageFile = async (file?: File | null) => {
-    if (!file) return;
+  const handleImageFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
     setUploading(true);
+    setError(null);
     try {
       const fd = new FormData();
-      fd.append("files", file);
+      Array.from(files).forEach((f) => fd.append("files", f));
       const res = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
       const env = await res.json();
       if (!res.ok) throw new Error(env?.message ?? "Урлаг хуулахад алдаа гарлаа.");
-      const url = (env.data as { url: string }[])[0]?.url;
-      if (url) setForm((f) => ({ ...f, image: url }));
+      const urls = ((env.data as { url: string }[]) ?? [])
+        .map((d) => d.url)
+        .filter(Boolean);
+      if (urls.length) {
+        setForm((f) => {
+          const next = [...f.images, ...urls];
+          return { ...f, images: next, image: f.image || next[0] || "" };
+        });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Урлаг хуулахад алдаа гарлаа.");
     } finally {
@@ -50,11 +58,27 @@ export default function AdminArtworksPage() {
     }
   };
 
+  const addImageByUrl = (raw: string) => {
+    const url = raw.trim();
+    if (!url) return;
+    setForm((f) => {
+      const next = [...f.images, url];
+      return { ...f, images: next, image: f.image || next[0] || "" };
+    });
+  };
+
+  const removeImage = (idx: number) => {
+    setForm((f) => {
+      const next = f.images.filter((_, i) => i !== idx);
+      return { ...f, images: next, image: next[0] || "" };
+    });
+  };
+
   const [form, setForm] = useState({
     title: "",
     description: "",
     image: "",
-    images: "",
+    images: [] as string[],
     price: "",
     categoryId: "",
     categoryName: "",
@@ -92,7 +116,7 @@ export default function AdminArtworksPage() {
       title: "",
       description: "",
       image: "",
-      images: "",
+      images: [] as string[],
       price: "",
       categoryId: "",
       categoryName: "",
@@ -119,7 +143,11 @@ export default function AdminArtworksPage() {
       title: artwork.title,
       description: artwork.description ?? "",
       image: artwork.image,
-      images: artwork.images?.join(", ") ?? "",
+      images: artwork.images?.length
+        ? artwork.images
+        : artwork.image
+          ? [artwork.image]
+          : [],
       price: String(artwork.price),
       categoryId: artwork.category?.id ?? "",
       categoryName: artwork.category?.name ?? "",
@@ -141,8 +169,8 @@ export default function AdminArtworksPage() {
       const payload = {
         title: form.title,
         description: form.description || undefined,
-        image: form.image,
-        images: form.images ? form.images.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
+        image: form.images[0] ?? form.image ?? "",
+        images: form.images.length ? form.images : undefined,
         price: Number(form.price),
         categoryId: form.categoryId || undefined,
         categoryName: form.categoryName || undefined,
@@ -243,30 +271,60 @@ export default function AdminArtworksPage() {
                   className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:border-accent"
                 />
               </Field>
-              <Field label="Зураг">
-                <div className="flex items-center gap-3">
-                  {form.image ? (
-                    <img src={form.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
-                  ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-white text-primary/30">
-                      —
+              <Field label="Зураг (олон зураг)" >
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-sm hover:border-accent">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        disabled={uploading}
+                        onChange={(e) => handleImageFiles(e.target.files)}
+                        className="sr-only"
+                      />
+                      {uploading ? "Урлаг хуулж байна…" : "Зураг сонгох"}
+                    </label>
+                    <input
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addImageByUrl((e.target as HTMLInputElement).value);
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }}
+                      placeholder="Эсвэл зургийн URL нэмэх"
+                      className="w-56 rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                  </div>
+
+                  {form.images.length > 0 && (
+                    <div className="flex flex-wrap gap-3">
+                      {form.images.map((src, i) => (
+                        <div
+                          key={src + i}
+                          className="group relative h-20 w-20 overflow-hidden rounded-xl border border-border bg-white"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={src} alt="" className="h-full w-full object-cover" />
+                          {i === 0 && (
+                            <span className="absolute left-0 top-0 rounded-br bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                              Primary
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeImage(i)}
+                            aria-label="Устгах"
+                            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary/80 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading}
-                    onChange={(e) => handleImageFile(e.target.files?.[0])}
-                    className="text-sm"
-                  />
-                  {uploading && <span className="text-xs text-primary/50">Урлаг хуулж байна…</span>}
                 </div>
-                <input
-                  value={form.image}
-                  onChange={(e) => setForm({ ...form, image: e.target.value })}
-                  placeholder="Эсвэл зургийн URL оруулна уу"
-                  className="mt-2 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:border-accent"
-                />
               </Field>
               <Field label="Үнэ">
                 <input

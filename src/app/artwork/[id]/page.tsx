@@ -8,7 +8,7 @@ import { Button } from "@/components/Button";
 import { Badge } from "@/components/Badge";
 import PurchaseRequestTrigger from "@/components/PurchaseRequestTrigger";
 import Reveal from "@/components/Reveal";
-import Lightbox from "@/components/Lightbox";
+import ArtworkGallery from "@/components/ArtworkGallery";
 import ShareButtons from "@/components/ShareButtons";
 import { formatPrice } from "@/lib/format";
 import type { ApiArtwork } from "@/types/api";
@@ -98,9 +98,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
 
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
           <Reveal className="lg:sticky lg:top-28 lg:self-start">
-            <div className="relative overflow-hidden border border-border bg-card shadow-lg shadow-accent/5">
-              <Lightbox artwork={art} related={related} />
-            </div>
+            <ArtworkGallery artwork={art} />
           </Reveal>
 
           <Reveal delay={100}>

@@ -24,6 +24,7 @@ export default function Navbar({
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [failedLogo, setFailedLogo] = useState<string | null>(null);
   const { user, status } = useAuth();
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function Navbar({
         aria-label="Primary"
       >
         <Link href="/" className="group flex items-center gap-2">
-          {logoImage ? (
+          {logoImage && failedLogo !== logoImage ? (
             <Image
               key={logoImage}
               src={logoImage}
@@ -56,6 +57,7 @@ export default function Navbar({
               width={48}
               height={48}
               className="rounded-full object-cover"
+              onError={() => setFailedLogo(logoImage ?? null)}
             />
           ) : (
             <span

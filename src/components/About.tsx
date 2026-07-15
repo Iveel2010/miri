@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Reveal from "./Reveal";
 import { SectionTitle } from "./SectionTitle";
 import { serverApi } from "@/lib/server-api";
+import SafeImage from "./SafeImage";
 
 const DEFAULT_STATS = [
   { value: "8+", label: "Жил зураг", icon: "🎨" },
@@ -39,9 +39,10 @@ export default async function About() {
           />
           <div className="relative overflow-hidden rounded-[2rem] border-4 border-white shadow-2xl">
             <div className="relative aspect-[4/5]">
-              <Image
+              <SafeImage
                 key={artistPhoto}
                 src={artistPhoto}
+                fallbackSrc="/misheel.jpg"
                 alt="Уран зураач Мишээлийн дүр зураг"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"

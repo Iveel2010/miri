@@ -147,7 +147,12 @@ export default function AdminContentPage() {
     setError(null);
     try {
       const url = await uploadImage(file);
-      set({ [key]: url });
+      const next = { ...form, [key]: url };
+      set(next);
+      // Persist immediately so the uploaded image shows on the public site
+      // without a separate Save click.
+      await apiPut("/api/site-settings", next);
+      setSaved(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Урлаг хуулахад алдаа гарлаа.");
     } finally {

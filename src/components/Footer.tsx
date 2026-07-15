@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 const QUICK_LINKS = [
   { label: "Нүүр", href: "/" },
@@ -33,21 +36,24 @@ export default function Footer({
   logoText?: string;
   logoImage?: string;
 }) {
+  const [failedLogo, setFailedLogo] = useState<string | null>(null);
+
   return (
     <footer className="bg-primary px-6 pb-8 pt-16 text-white">
       <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-3">
         <div>
           <Link href="/" className="flex items-center gap-2">
-            {logoImage ? (
-              <Image
-                key={logoImage}
-                src={logoImage}
-                alt={logoText}
-                width={48}
-                height={48}
-                className="rounded-full object-cover"
-              />
-            ) : (
+          {logoImage && failedLogo !== logoImage ? (
+            <Image
+              key={logoImage}
+              src={logoImage}
+              alt={logoText}
+              width={48}
+              height={48}
+              className="rounded-full object-cover"
+              onError={() => setFailedLogo(logoImage ?? null)}
+            />
+          ) : (
               <span
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-secondary text-white"
                 aria-hidden="true"
