@@ -18,6 +18,8 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Miry — Мишээлийн урлаг",
   description:

@@ -3,7 +3,9 @@ import { serverApi, serverApiList } from "@/lib/server-api";
 import { toArtworks, toArtwork } from "@/lib/mappers";
 import ShopHero from "@/components/shop/ShopHero";
 import ShopFeatured from "@/components/shop/ShopFeatured";
-import ShopCurated, { type ShopCollection } from "@/components/shop/ShopCurated";
+import ShopCurated, {
+  type ShopCollection,
+} from "@/components/shop/ShopCurated";
 import ShopArtist, {
   type ShopArtistProfile,
   type ShopArtistWork,
@@ -22,13 +24,22 @@ export const metadata: Metadata = {
     "MIRI-ийн хамгийн онцгой бүтээлүүд — цөөн тоогоор бүтээсэн, дахин давтагдашгүй болон Limited Edition зураг. Зураг бүр өөрийн түүх, үнэ цэнэ, мэдрэмжийг хадгалсан.",
 };
 
-const ACCENTS = ["#dcd6ea", "#e4dacd", "#d9a7a0", "#cfc9da", "#d8b1ab", "#e6dcc9"];
+const ACCENTS = [
+  "#dcd6ea",
+  "#e4dacd",
+  "#d9a7a0",
+  "#cfc9da",
+  "#d8b1ab",
+  "#e6dcc9",
+];
 
 export const dynamic = "force-dynamic";
 
 export default async function ShopPage() {
   const [list, cats, collections] = await Promise.all([
-    serverApiList<ApiArtwork>("/api/artworks?limit=12&sort=newest&featured=true"),
+    serverApiList<ApiArtwork>(
+      "/api/artworks?limit=12&sort=newest&featured=true",
+    ),
     serverApi<ApiCategory[]>("/api/categories"),
     serverApiList<ApiCollection>("/api/collections/public"),
   ]);
@@ -39,9 +50,9 @@ export default async function ShopPage() {
   const featuredArtistId = list.items[0]?.artist.id;
   const artist =
     featuredArtistId != null
-      ? await serverApi<ApiArtistProfile>(`/api/artists/${featuredArtistId}`).catch(
-          () => null,
-        )
+      ? await serverApi<ApiArtistProfile>(
+          `/api/artists/${featuredArtistId}`,
+        ).catch(() => null)
       : null;
   const artistWorks: ShopArtistWork[] = artist
     ? list.items
@@ -78,15 +89,6 @@ export default async function ShopPage() {
     <main className="bg-shop text-shop-ink">
       <ShopHero />
       <ShopFeatured items={artworks} />
-      {featuredArtist && (
-        <ShopArtist artist={featuredArtist} works={artistWorks} />
-      )}
-      <ShopCurated collections={shopCollections} />
-      <ShopGrid
-        initialArtworks={artworks}
-        initialMeta={list.meta}
-        categories={categories}
-      />
     </main>
   );
 }

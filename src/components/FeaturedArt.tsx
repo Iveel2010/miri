@@ -1,12 +1,12 @@
 import { SectionTitle } from "./SectionTitle";
 import FeaturedCarousel from "./FeaturedCarousel";
-import { serverApiList } from "@/lib/server-api";
+import { safeServerApiList } from "@/lib/server-api";
 import type { ApiArtwork } from "@/types/api";
 
 export const dynamic = "force-dynamic";
 
 export default async function FeaturedArt() {
-  const { items } = await serverApiList<ApiArtwork>("/api/artworks?limit=10&sort=popular");
+  const { items } = await safeServerApiList<ApiArtwork>("/api/artworks?limit=10&sort=popular");
 
   return (
     <section

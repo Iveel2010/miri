@@ -1,5 +1,7 @@
 import { headers } from "next/headers";
+import { inspect } from "util";
 import { ApiError, type Envelope } from "./api-client";
+import { logger } from "./logger";
 import type { PaginationMeta } from "@/types/api";
 
 function buildEmptyMeta(): PaginationMeta {
@@ -47,4 +49,39 @@ export async function serverApiList<T>(
 ): Promise<{ items: T[]; meta: PaginationMeta }> {
   const env = await serverRaw(path, auth);
   return { items: (env?.data ?? []) as T[], meta: (env?.meta as PaginationMeta | undefined) ?? buildEmptyMeta() };
+}
+
+/**
+ * Resilient variant of {@link serverApi}: on any failure it logs the real
+ * cause (so transient/opaque errors like a thrown `{}` are never swallowed
+ * silently) and returns `fallback` instead of crashing the whole page with a
+ * 500. Use this for Server-Component data that should degrade gracefully.
+ */
+export async function safeServerApi<T>(
+  path: string,
+  fallback: T,
+  auth = false,
+): Promise<T> {
+  try {
+    return await serverApi<T>(path, auth);
+  } catch (err) {
+    logger.error(`safeServerApi failed: ${path}`, inspect(err, { depth: 5 }));
+    return fallback;
+  }
+}
+
+/**
+ * Resilient variant of {@link serverApiList}: returns empty data on failure
+ * rather than throwing.
+ */
+export async function safeServerApiList<T>(
+  path: string,
+  auth = false,
+): Promise<{ items: T[]; meta: PaginationMeta }> {
+  try {
+    return await serverApiList<T>(path, auth);
+  } catch (err) {
+    logger.error(`safeServerApiList failed: ${path}`, inspect(err, { depth: 5 }));
+    return { items: [], meta: buildEmptyMeta() };
+  }
 }

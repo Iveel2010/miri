@@ -40,6 +40,7 @@ export default async function About() {
           <div className="relative overflow-hidden rounded-[2rem] border-4 border-white shadow-2xl">
             <div className="relative aspect-[4/5]">
               <Image
+                key={artistPhoto}
                 src={artistPhoto}
                 alt="Уран зураач Мишээлийн дүр зураг"
                 fill

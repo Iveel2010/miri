@@ -50,6 +50,7 @@ export default function Navbar({
         <Link href="/" className="group flex items-center gap-2">
           {logoImage ? (
             <Image
+              key={logoImage}
               src={logoImage}
               alt={logoText}
               width={48}

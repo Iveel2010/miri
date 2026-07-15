@@ -109,6 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     try {
       await apiPost("/api/auth/logout");
+    } catch {
+      // ignore logout errors (e.g. expired token) and clear local state anyway
     } finally {
       setUser(null);
       setStatus("unauthenticated");

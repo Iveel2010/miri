@@ -26,7 +26,8 @@ export default function LoginPage() {
   const validate = useCallback(() => {
     const next: FieldErrors = {};
     if (!email.trim()) next.email = "Имэйл шаардлагатай.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = "Имэйл хаягийн форматад таарахгүй байна.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      next.email = "Имэйл хаягийн форматад таарахгүй байна.";
     if (!password) next.password = "Нууц үг шаардлагатай.";
     return next;
   }, [email, password]);
@@ -46,7 +47,8 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Нэвтрэхэд алдаа гарлаа.";
+      const msg =
+        err instanceof ApiError ? err.message : "Нэвтрэхэд алдаа гарлаа.";
       if (msg.toLowerCase().includes("invalid credentials")) {
         setErrors({ general: "Имэйл эсвэл нууц үг буруу байна." });
       } else if (msg.toLowerCase().includes("email")) {
@@ -64,7 +66,10 @@ export default function LoginPage() {
   const handleBlur = (field: string) => {
     setTouched((prev) => new Set(prev).add(field));
     const validationErrors = validate();
-    setErrors((prev) => ({ ...prev, [field]: validationErrors[field as keyof FieldErrors] }));
+    setErrors((prev) => ({
+      ...prev,
+      [field]: validationErrors[field as keyof FieldErrors],
+    }));
   };
 
   return (
@@ -76,11 +81,13 @@ export default function LoginPage() {
             М
           </div>
           <h1 className="font-display text-4xl font-bold text-primary sm:text-5xl">
-            Дахин тавтай<br />
-            <span className="text-accent">морь, Мири!</span>
+            Дахин тавтай
+            <br />
+            <span className="text-accent">морил, Мири!</span>
           </h1>
           <p className="mt-4 max-w-sm text-balance text-primary/60 leading-relaxed">
-            Хадгалсан бүтээл, хүсэлт, мэдээлэл — өөрийн талаар бүгдийг хадгалж хэрэглэхэд зориулагдсан.
+            Хадгалсан бүтээл, хүсэлт, мэдээлэл — өөрийн талаар бүгдийг хадгалж
+            хэрэглэхэд зориулагдсан.
           </p>
           <div className="mt-8 flex items-center gap-3 text-sm text-primary/40">
             <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
@@ -91,13 +98,20 @@ export default function LoginPage() {
         {/* Right panel */}
         <div className="rounded-[2rem] border border-border bg-card p-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-10">
           <header className="mb-8">
-            <h2 className="font-display text-2xl font-bold text-primary">Нэвтрэх</h2>
-            <p className="mt-1 text-sm text-primary/60">Өөрийн танд хайх, худалдах, хадгалах.</p>
+            <h2 className="font-display text-2xl font-bold text-primary">
+              Нэвтрэх
+            </h2>
+            <p className="mt-1 text-sm text-primary/60">
+              Өөрийн танд хайх, худалдах, хадгалах.
+            </p>
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-sm font-medium text-primary/70">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-primary/70"
+              >
                 Имэйл
               </label>
               <input
@@ -111,7 +125,9 @@ export default function LoginPage() {
                 autoComplete="email"
                 aria-invalid={!!errors.email && touched.has("email")}
                 className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none transition-colors placeholder:text-primary/30 focus:border-accent focus:ring-2 focus:ring-accent/10 ${
-                  errors.email && touched.has("email") ? "border-red-400" : "border-border"
+                  errors.email && touched.has("email")
+                    ? "border-red-400"
+                    : "border-border"
                 }`}
               />
               {errors.email && touched.has("email") && (
@@ -120,7 +136,10 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="password" className="block text-sm font-medium text-primary/70">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-primary/70"
+              >
                 Нууц үг
               </label>
               <div className="relative">
@@ -135,23 +154,45 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   aria-invalid={!!errors.password && touched.has("password")}
                   className={`w-full rounded-2xl border bg-white px-4 py-3 pr-12 text-sm outline-none transition-colors placeholder:text-primary/30 focus:border-accent focus:ring-2 focus:ring-accent/10 ${
-                    errors.password && touched.has("password") ? "border-red-400" : "border-border"
+                    errors.password && touched.has("password")
+                      ? "border-red-400"
+                      : "border-border"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Нууц үгийг нуух" : "Нууц үгийг харуулах"}
+                  aria-label={
+                    showPassword ? "Нууц үгийг нуух" : "Нууц үгийг харуулах"
+                  }
                   className="absolute inset-y-0 right-2 flex items-center px-2 text-primary/50 transition-colors hover:text-accent"
                 >
                   {showPassword ? (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.7}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-5 w-5"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
                       <line x1="3" y1="3" x2="21" y2="21" />
                     </svg>
                   ) : (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.7}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-5 w-5"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
                     </svg>
                   )}
                 </button>
@@ -178,7 +219,10 @@ export default function LoginPage() {
                 />
                 Намайг сана
               </label>
-              <Link href="/forgot-password" className="text-accent hover:underline">
+              <Link
+                href="/forgot-password"
+                className="text-accent hover:underline"
+              >
                 Нууц үг мартсан?
               </Link>
             </div>
@@ -189,14 +233,21 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" disabled={loading} className="w-full !py-3.5 text-base">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full !py-3.5 text-base"
+            >
               {loading ? "Түр хүлээнэ үү…" : "Нэвтрэх"}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-primary/60">
             Бүртгэлгүй юу?{" "}
-            <Link href="/register" className="font-medium text-accent hover:underline">
+            <Link
+              href="/register"
+              className="font-medium text-accent hover:underline"
+            >
               Бүртгүүлэх
             </Link>
           </div>

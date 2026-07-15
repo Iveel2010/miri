@@ -8,19 +8,32 @@ type Level = "debug" | "info" | "warn" | "error";
 const ORDER: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 const CURRENT = ORDER[(process.env.LOG_LEVEL as Level) ?? "info"] ?? 20;
 
+function serialize(arg: unknown): unknown {
+  if (arg instanceof Error) {
+    return { name: arg.name, message: arg.message, stack: arg.stack, cause: arg.cause };
+  }
+  if (arg && typeof arg === "object") {
+    const proto = Object.getPrototypeOf(arg);
+    return {
+      __type: proto?.constructor?.name ?? typeof arg,
+      __keys: Object.getOwnPropertyNames(arg),
+      __json: JSON.stringify(arg),
+    };
+  }
+  return arg;
+}
+
 function emit(level: Level, args: unknown[]) {
   if (ORDER[level] < CURRENT) return;
   const ts = new Date().toISOString();
   const prefix = `[${ts}] ${level.toUpperCase()}`;
+  const safe = args.map(serialize);
   if (level === "error") {
-    
-    console.error(prefix, ...args);
+    console.error(prefix, ...safe);
   } else if (level === "warn") {
-    
-    console.warn(prefix, ...args);
+    console.warn(prefix, ...safe);
   } else {
-    
-    console.log(prefix, ...args);
+    console.log(prefix, ...safe);
   }
 }
 

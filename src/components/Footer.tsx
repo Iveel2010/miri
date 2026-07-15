@@ -40,6 +40,7 @@ export default function Footer({
           <Link href="/" className="flex items-center gap-2">
             {logoImage ? (
               <Image
+                key={logoImage}
                 src={logoImage}
                 alt={logoText}
                 width={48}

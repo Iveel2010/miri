@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { serverApi, serverApiList } from "@/lib/server-api";
+import { safeServerApi, safeServerApiList } from "@/lib/server-api";
 import { toArtworks } from "@/lib/mappers";
 import { GalleryExplorer } from "@/components/GalleryExplorer";
 import type { ApiArtwork, ApiCategory } from "@/types/api";
@@ -14,11 +14,11 @@ export const dynamic = "force-dynamic";
 
 export default async function GalleryPage() {
   const [list, cats] = await Promise.all([
-    serverApiList<ApiArtwork>("/api/artworks?limit=12&sort=newest"),
-    serverApi<ApiCategory[]>("/api/categories"),
+    safeServerApiList<ApiArtwork>("/api/artworks?limit=12&sort=newest"),
+    safeServerApi<ApiCategory[] | null>("/api/categories", null),
   ]);
 
-  const categories = cats.map((c) => ({ name: c.name, id: c.id }));
+  const categories = (cats ?? []).map((c) => ({ name: c.name, id: c.id }));
 
   return (
     <GalleryExplorer

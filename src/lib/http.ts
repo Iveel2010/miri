@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { inspect } from "util";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { ApiResponse } from "./response";
@@ -40,10 +41,11 @@ export async function parseForm(req: Request) {
 }
 
 /** Map any thrown error to a typed JSON response. */
-export function handleError(err: unknown): NextResponse {
+export function handleError(err: unknown, req?: Request): NextResponse {
+  const loc = req ? `${req.method} ${req.url}` : "(no request)";
   if (err instanceof AppError) {
     if (err.statusCode >= 500) {
-      logger.error(err.name, err.message, err.details);
+      logger.error(`${loc} -> ${err.name}: ${err.message}`, err.details);
     }
     return ApiResponse.fail(
       err.message,
@@ -63,12 +65,19 @@ export function handleError(err: unknown): NextResponse {
     }
     return ApiResponse.fail("Validation failed", 422, "VALIDATION_ERROR", details);
   }
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  if (
+    err instanceof Prisma.PrismaClientKnownRequestError ||
+    err instanceof Prisma.PrismaClientUnknownRequestError ||
+    err instanceof Prisma.PrismaClientInitializationError ||
+    err instanceof Prisma.PrismaClientValidationError
+  ) {
     const mapped = fromPrismaError(err);
-    if (mapped.statusCode >= 500) logger.error(mapped.message, err.meta);
+    const meta = (err as { meta?: unknown }).meta;
+    if (mapped.statusCode >= 500) logger.error(`${loc} -> ${mapped.message}`, meta ?? err.message);
     return ApiResponse.fail(mapped.message, mapped.statusCode, mapped.code, mapped.details as ApiError["errors"]);
   }
-  logger.error("Unhandled error", err);
+  // Genuinely unexpected: never swallow the cause. Surface its real shape.
+  logger.error(`UNHANDLED ${loc} ::`, inspect(err, { depth: 5, showHidden: false }));
   return ApiResponse.fail(
     process.env.NODE_ENV === "production"
       ? "Internal server error"
@@ -92,7 +101,7 @@ export function withHandler(
       const res = await fn(req, ctx);
       return res;
     } catch (err) {
-      return handleError(err);
+      return handleError(err, req);
     }
   };
 }

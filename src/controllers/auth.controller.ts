@@ -1,7 +1,8 @@
 import { parseJson } from "@/lib/http";
 import { validate } from "@/lib/validation";
 import { ApiResponse } from "@/lib/response";
-import { requireUser, getRefreshToken } from "@/lib/auth";
+import { requireUser, getRefreshToken, getAccessToken } from "@/lib/auth";
+import { verifyAccessToken } from "@/lib/jwt";
 import { authService, registerSchema, adminRegisterSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "@/services/auth.service";
 import { userRepository } from "@/repositories/user.repository";
 
@@ -12,6 +13,7 @@ import { userRepository } from "@/repositories/user.repository";
 // ============================================================================
 
 export const authController = {
+  /** Register a new user, issue tokens, send verification email. */
   async register(req: Request) {
     const body = await parseJson(req);
     const input = validate(registerSchema, body);
@@ -35,8 +37,23 @@ export const authController = {
   },
 
   async logout(req: Request) {
-    const { sub } = requireUser(req);
-    await authService.revokeAll(sub); // bump tokenVersion + clear cookies
+    let userId: string | undefined;
+    try {
+      const token = getAccessToken(req);
+      if (token) {
+        const payload = verifyAccessToken(token);
+        userId = payload.sub;
+      }
+    } catch {
+      // ignore invalid/expired access token so logout still clears cookies
+    }
+
+    if (userId) {
+      await authService.revokeAll(userId);
+    } else {
+      await authService.logout();
+    }
+
     return ApiResponse.ok({ loggedOut: true }, 200, "Logged out");
   },
 
@@ -72,7 +89,6 @@ export const authController = {
     const body = await parseJson(req);
     const { email } = validate(forgotPasswordSchema, body);
     await authService.forgotPassword(email);
-    // Always return success to avoid account enumeration.
     return ApiResponse.ok({ sent: true }, 200, "If the account exists, a reset link was sent");
   },
 

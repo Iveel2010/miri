@@ -3,7 +3,7 @@ import Reveal from "@/components/Reveal";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Button } from "@/components/Button";
 import { ArtworkCard } from "@/components/ArtworkCard";
-import { serverApiList } from "@/lib/server-api";
+import { safeServerApiList } from "@/lib/server-api";
 import { toArtworks } from "@/lib/mappers";
 import type { ApiArtwork } from "@/types/api";
 
@@ -35,7 +35,7 @@ const TIMELINE = [
 ];
 
 export default async function AboutPage() {
-  const { items } = await serverApiList<ApiArtwork>(
+  const { items } = await safeServerApiList<ApiArtwork>(
     "/api/artworks?limit=3&sort=popular",
   );
 

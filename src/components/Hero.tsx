@@ -1,18 +1,18 @@
 import Image from "next/image";
 import Reveal from "./Reveal";
 import { Button } from "./Button";
-import { serverApi } from "@/lib/server-api";
+import { safeServerApi } from "@/lib/server-api";
 
 export const dynamic = "force-dynamic";
 
 export default async function Hero() {
-  const data = await serverApi<{
+  const data = await safeServerApi<{
     heroImage: string;
     heroTitle: string;
     heroSubtitle: string;
     heroBadge: string;
     heroCaption: string;
-  }>("/api/site-settings/hero");
+  } | null>("/api/site-settings/hero", null);
 
   const titleLines = (data?.heroTitle ?? "Урлаг\nболон Мэдрэмж").split("\n");
 
