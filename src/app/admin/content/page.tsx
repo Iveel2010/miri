@@ -68,6 +68,7 @@ export default function AdminContentPage() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [heroSaved, setHeroSaved] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -85,6 +86,7 @@ export default function AdminContentPage() {
   const set = (patch: Partial<ApiSiteSettings>) => {
     setForm((f) => ({ ...f, ...patch }));
     setSaved(false);
+    setSavedAt(null);
   };
 
   const setHero = (patch: Partial<ApiSiteHeroSettings>) => {
@@ -98,6 +100,7 @@ export default function AdminContentPage() {
       contact: { ...f.contact, ...patch },
     }));
     setSaved(false);
+    setSavedAt(null);
   };
 
   const setSocial = (i: number, patch: Partial<ApiSiteSocial>) => {
@@ -109,6 +112,7 @@ export default function AdminContentPage() {
       },
     }));
     setSaved(false);
+    setSavedAt(null);
   };
 
   const addSocial = () => {
@@ -120,6 +124,7 @@ export default function AdminContentPage() {
       },
     }));
     setSaved(false);
+    setSavedAt(null);
   };
 
   const removeSocial = (i: number) => {
@@ -131,6 +136,7 @@ export default function AdminContentPage() {
       },
     }));
     setSaved(false);
+    setSavedAt(null);
   };
 
   const setStat = (i: number, patch: Partial<ApiSiteStat>) => {
@@ -139,6 +145,7 @@ export default function AdminContentPage() {
       aboutStats: f.aboutStats.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
     }));
     setSaved(false);
+    setSavedAt(null);
   };
 
   const handleImage = async (key: "logoImage" | "artistPhoto", file?: File | null) => {
@@ -153,6 +160,7 @@ export default function AdminContentPage() {
       // without a separate Save click.
       await apiPut("/api/site-settings", next);
       setSaved(true);
+      setSavedAt("Лого");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Урлаг хуулахад алдаа гарлаа.");
     } finally {
@@ -201,6 +209,22 @@ export default function AdminContentPage() {
       setError(e instanceof ApiError ? e.message : "Хадгалахад алдаа гарлаа.");
     } finally {
       setSavingHero(false);
+    }
+  };
+
+  const saveSection = async (section: string) => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    setSavedAt(null);
+    try {
+      await apiPut("/api/site-settings", form);
+      setSaved(true);
+      setSavedAt(section);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Хадгалахад алдаа гарлаа.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -337,6 +361,19 @@ export default function AdminContentPage() {
                 />
               </div>
             </Field>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => saveSection("Лого")}
+                disabled={saving}
+                className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-60"
+              >
+                {saving ? "Хадгалж байна…" : "Логог хадгалах"}
+              </button>
+              {savedAt === "Лого" && (
+                <p className="text-sm text-green-600 self-center">Амжилттай хадгалагдлаа.</p>
+              )}
+            </div>
           </section>
 
           {/* Artist / About */}
@@ -414,6 +451,19 @@ export default function AdminContentPage() {
                 ))}
               </div>
             </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => saveSection("Уран зураач & Танилцуулга")}
+                disabled={saving}
+                className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-60"
+              >
+                {saving ? "Хадгалж байна…" : "Уран зураачийг хадгалах"}
+              </button>
+              {savedAt === "Уран зураач & Танилцуулга" && (
+                <p className="text-sm text-green-600 self-center">Амжилттай хадгалагдлаа.</p>
+              )}
+            </div>
           </section>
 
           {/* Contact */}
@@ -482,6 +532,19 @@ export default function AdminContentPage() {
                 >
                   + Социал нэмэх
                 </button>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => saveSection("Холбоо барих")}
+                disabled={saving}
+                className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-60"
+              >
+                {saving ? "Хадгалж байна…" : "Холбоо барихыг хадгалах"}
+              </button>
+              {savedAt === "Холбоо барих" && (
+                <p className="text-sm text-green-600 self-center">Амжилттай хадгалагдлаа.</p>
               )}
             </div>
           </section>
