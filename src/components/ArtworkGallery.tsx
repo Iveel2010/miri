@@ -63,10 +63,11 @@ export default function ArtworkGallery({ artwork }: ArtworkGalleryProps) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <button
-          type="button"
+        <div
           onClick={() => setZoom(true)}
           className="group relative block aspect-[4/5] w-full cursor-zoom-in"
+          role="button"
+          tabIndex={0}
           aria-label={`${artwork.title} — томоор харах`}
         >
           <div
@@ -98,10 +99,7 @@ export default function ArtworkGallery({ artwork }: ArtworkGalleryProps) {
             <>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  go(-1);
-                }}
+                onClick={() => go(-1)}
                 aria-label="Өмнөх зураг"
                 className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-primary shadow-sm backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-white active:scale-95"
               >
@@ -118,10 +116,7 @@ export default function ArtworkGallery({ artwork }: ArtworkGalleryProps) {
               </button>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  go(1);
-                }}
+                onClick={() => go(1)}
                 aria-label="Дараах зураг"
                 className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-primary shadow-sm backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-white active:scale-95"
               >
@@ -138,7 +133,7 @@ export default function ArtworkGallery({ artwork }: ArtworkGalleryProps) {
               </button>
             </>
           )}
-        </button>
+        </div>
       </div>
 
       {gallery.length > 1 && (

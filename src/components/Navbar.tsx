@@ -8,9 +8,9 @@ import { NavbarAuth } from "./NavbarAuth";
 import { useAuth } from "@/lib/auth-client";
 
 const NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Gallery", href: "/gallery" },
-  { label: "About", href: "/about" },
+  { label: "Нүүр", href: "/" },
+  { label: "Бүтээл", href: "/gallery" },
+  { label: "Тухай", href: "/about" },
   { label: "Онцгой", href: "/shop" },
   { label: "Холбоо барих", href: "/contact" },
 ];
@@ -34,7 +34,9 @@ export default function Navbar({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isAdmin = status === "authenticated" && (user?.role === "ADMIN" || user?.role === "ARTIST");
+  const isAdmin =
+    status === "authenticated" &&
+    (user?.role === "ADMIN" || user?.role === "ARTIST");
 
   return (
     <header

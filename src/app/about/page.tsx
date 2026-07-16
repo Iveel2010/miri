@@ -49,11 +49,8 @@ export default async function AboutPage() {
           <span className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-xl text-accent shadow-sm">
             ✦
           </span>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-accent">
-            Миний тухай
-          </p>
           <h1 className="mt-3 font-display text-5xl font-bold text-primary sm:text-6xl">
-            Танилцъя
+            Миний тухай
           </h1>
           <div className="mx-auto mt-6 h-px w-20 bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
         </Reveal>

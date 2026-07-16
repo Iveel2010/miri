@@ -14,19 +14,6 @@ export default function ShopFeatured({ items }: Props) {
   return (
     <section className="bg-shop px-6 py-24 md:py-32" id="collection">
       <div className="mx-auto max-w-6xl">
-        <Reveal className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-shop-soft">
-            Featured Collection
-          </p>
-          <h2 className="mt-4 font-display text-4xl font-bold leading-tight text-shop-ink sm:text-5xl">
-            The pieces collectors ask for first.
-          </h2>
-          <p className="mt-4 text-shop-soft">
-            A short, considered selection of limited works — each numbered,
-            signed, and made to be kept.
-          </p>
-        </Reveal>
-
         <div className="mt-16 space-y-20 md:space-y-28">
           {featured.map((art, i) => {
             const flip = i % 2 === 1;
@@ -74,10 +61,8 @@ export default function ShopFeatured({ items }: Props) {
                     </div>
 
                     <div className="mt-6 max-h-0 overflow-hidden opacity-0 transition-all duration-700 ease-out group-hover:max-h-24 group-hover:opacity-100">
-                      <p className="border-l-2 border-shop-blush pl-4 text-sm italic text-shop-soft">
-                        Numbered and signed by the artist. Includes a
-                        certificate of authenticity and complimentary
-                        white-glove delivery.
+                      <p className="border-l-2 border-shop-blush pl-4 text-sm italic text-shop-soft line-clamp-3">
+                        {art.description || `${art.artist} — ${art.title}-ийн бүтээл.`}
                       </p>
                     </div>
                   </div>

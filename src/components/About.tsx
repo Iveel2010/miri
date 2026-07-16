@@ -69,13 +69,14 @@ export default async function About() {
         <div className="space-y-8">
           <SectionTitle
             align="left"
-            eyebrow="Уран зураачийн тухай"
             title={aboutName}
             subtitle={aboutSubtitle}
             id="about-heading"
           />
           {aboutBio && (
-            <p className="text-sm leading-relaxed text-primary/60">{aboutBio}</p>
+            <p className="text-sm leading-relaxed text-primary/60">
+              {aboutBio}
+            </p>
           )}
           <dl className="grid grid-cols-3 gap-4 text-center">
             {stats.map((stat, i) => (

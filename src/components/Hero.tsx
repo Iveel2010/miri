@@ -61,7 +61,10 @@ export default async function Hero() {
             </div>
             <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem]">
               <Image
-                src={data?.heroImage ?? "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=900&h=1125&fit=crop&crop=center"}
+                src={
+                  data?.heroImage ??
+                  "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=900&h=1125&fit=crop&crop=center"
+                }
                 alt="Мишээлийн зөөлөн, мөрөөдлийн абстракт зураг"
                 fill
                 priority

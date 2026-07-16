@@ -6,7 +6,7 @@ import { useState } from "react";
 
 const QUICK_LINKS = [
   { label: "Нүүр", href: "/" },
-  { label: "Урлас", href: "/gallery" },
+  { label: "Бүтээл", href: "/gallery" },
   { label: "Тухай", href: "/about" },
   { label: "Холбоо барих", href: "/contact" },
 ];
@@ -43,17 +43,17 @@ export default function Footer({
       <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-3">
         <div>
           <Link href="/" className="flex items-center gap-2">
-          {logoImage && failedLogo !== logoImage ? (
-            <Image
-              key={logoImage}
-              src={logoImage}
-              alt={logoText}
-              width={48}
-              height={48}
-              className="rounded-full object-cover"
-              onError={() => setFailedLogo(logoImage ?? null)}
-            />
-          ) : (
+            {logoImage && failedLogo !== logoImage ? (
+              <Image
+                key={logoImage}
+                src={logoImage}
+                alt={logoText}
+                width={48}
+                height={48}
+                className="rounded-full object-cover"
+                onError={() => setFailedLogo(logoImage ?? null)}
+              />
+            ) : (
               <span
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-secondary text-white"
                 aria-hidden="true"
@@ -87,9 +87,7 @@ export default function Footer({
         </nav>
 
         <div className="md:justify-self-end">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-white/70">
-            Сайн уу
-          </h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-white/70"></h3>
           <div className="mt-4 flex gap-4">
             {SOCIALS.map((social) => (
               <a
@@ -115,8 +113,8 @@ export default function Footer({
       </div>
 
       <div className="mx-auto mt-12 max-w-6xl border-t border-white/10 pt-6 text-center text-sm text-white/40">
-        &copy; {new Date().getFullYear()} Miry · Мишээлийн урлаг. Хайр
-        сэтгэлээр бүтээгдсэн &hearts;.
+        &copy; {new Date().getFullYear()} Miry · Мишээлийн урлаг. Хайр сэтгэлээр
+        бүтээгдсэн &hearts;.
       </div>
     </footer>
   );

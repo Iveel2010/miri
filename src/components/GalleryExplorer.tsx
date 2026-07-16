@@ -96,12 +96,8 @@ export function GalleryExplorer({
             ✦
           </span>
           <h1 className="mt-3 font-display text-5xl font-bold text-primary sm:text-6xl">
-            Gallery
+            Бүтээл
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-balance text-primary/60">
-            Зөөлөн, мөрөөдлийн жаахан ертөнцүүд — будгаар болон дижиталээр
-            бүтээгдсэн.
-          </p>
         </header>
 
         <div className="mt-12 flex flex-col gap-10 lg:flex-row lg:gap-12">

@@ -23,7 +23,7 @@ interface AdminStats {
 
 const fmt = (n: number) => (n || 0).toLocaleString("en-US");
 const money = (n: number) =>
-  "$" + (n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  "₮" + (n || 0).toLocaleString("mn-MN", { maximumFractionDigits: 0 });
 
 function buildBars(revenue: number, sales: number, views: number): number[] {
   const max = Math.max(revenue, sales * 10, views / 50, 1);
