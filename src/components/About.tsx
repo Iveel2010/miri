@@ -61,7 +61,7 @@ export default async function About() {
             className="absolute -bottom-3 left-6 rounded-full bg-white px-4 py-1.5 font-display text-sm font-semibold text-primary shadow-md"
             aria-hidden="true"
           >
-            Misheel
+            Мишээл
           </span>
         </div>
 
