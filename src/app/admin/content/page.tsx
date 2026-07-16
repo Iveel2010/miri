@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ZodError } from "zod";
 import Image from "next/image";
 import AdminShell from "@/app/admin/layout";
 import { apiGet, apiPut, ApiError } from "@/lib/api-client";
+import { heroSettingsSchema, siteSettingsSchema } from "@/lib/schemas";
 import type { ApiSiteSettings, ApiSiteStat, ApiSiteSocial, ApiSiteHeroSettings } from "@/types/api";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
   return (
     <div className="space-y-1">
       <label className="block text-sm font-medium text-primary/70">{label}</label>
       {children}
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -66,6 +69,8 @@ export default function AdminContentPage() {
   const [saving, setSaving] = useState(false);
   const [savingHero, setSavingHero] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [heroFieldErrors, setHeroFieldErrors] = useState<Record<string, string>>({});
+  const [siteFieldErrors, setSiteFieldErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [heroSaved, setHeroSaved] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -113,6 +118,46 @@ export default function AdminContentPage() {
     }));
     setSaved(false);
     setSavedAt(null);
+  };
+
+  const validateHero = (): boolean => {
+    try {
+      heroSettingsSchema.parse(heroForm);
+      setHeroFieldErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const errors: Record<string, string> = {};
+        for (const issue of err.issues) {
+          const key = issue.path.join(".") || "_";
+          errors[key] = issue.message;
+        }
+        setHeroFieldErrors(errors);
+      } else {
+        setError(err instanceof Error ? err.message : "Validation failed");
+      }
+      return false;
+    }
+  };
+
+  const validateSite = (): boolean => {
+    try {
+      siteSettingsSchema.parse(form);
+      setSiteFieldErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const errors: Record<string, string> = {};
+        for (const issue of err.issues) {
+          const key = issue.path.join(".") || "_";
+          errors[key] = issue.message;
+        }
+        setSiteFieldErrors(errors);
+      } else {
+        setError(err instanceof Error ? err.message : "Validation failed");
+      }
+      return false;
+    }
   };
 
   const addSocial = () => {
@@ -184,6 +229,7 @@ export default function AdminContentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateSite()) return;
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -199,6 +245,7 @@ export default function AdminContentPage() {
 
   const handleHeroSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateHero()) return;
     setSavingHero(true);
     setError(null);
     setHeroSaved(false);
@@ -213,6 +260,7 @@ export default function AdminContentPage() {
   };
 
   const saveSection = async (section: string) => {
+    if (!validateSite()) return;
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -257,7 +305,7 @@ export default function AdminContentPage() {
           {/* Hero */}
           <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
             <h3 className="font-display text-lg font-semibold text-primary">Нүүр хуудас</h3>
-            <Field label="Нүүр зураг">
+            <Field label="Нүүр зураг" error={heroFieldErrors.heroImage}>
               <div className="flex items-center gap-4">
                   {heroForm.heroImage ? (
                     <Image src={heroForm.heroImage} alt="hero" width={80} height={100} className="rounded-2xl object-cover" />
@@ -280,7 +328,7 @@ export default function AdminContentPage() {
                 />
               </div>
             </Field>
-            <Field label="Баганууд">
+            <Field label="Баганууд" error={heroFieldErrors.heroBadge}>
               <input
                 className={inputCls}
                 value={heroForm.heroBadge}
@@ -288,7 +336,7 @@ export default function AdminContentPage() {
                 placeholder="MIRI"
               />
             </Field>
-            <Field label="Гарчиг">
+            <Field label="Гарчиг" error={heroFieldErrors.heroTitle}>
               <textarea
                 rows={2}
                 className={inputCls}
@@ -296,7 +344,7 @@ export default function AdminContentPage() {
                 onChange={(e) => setHero({ heroTitle: e.target.value })}
               />
             </Field>
-            <Field label="Тайлбар">
+            <Field label="Тайлбар" error={heroFieldErrors.heroSubtitle}>
               <textarea
                 rows={4}
                 className={inputCls}
@@ -304,7 +352,7 @@ export default function AdminContentPage() {
                 onChange={(e) => setHero({ heroSubtitle: e.target.value })}
               />
             </Field>
-            <Field label="Зургийг доорхи текст">
+            <Field label="Зургийг доорхи текст" error={heroFieldErrors.heroCaption}>
               <input
                 className={inputCls}
                 value={heroForm.heroCaption}
@@ -330,7 +378,7 @@ export default function AdminContentPage() {
           {/* Logo */}
           <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
             <h3 className="font-display text-lg font-semibold text-primary">Лого</h3>
-            <Field label="Лого текст">
+            <Field label="Лого текст" error={siteFieldErrors.logoText}>
               <input
                 className={inputCls}
                 value={form.logoText}
@@ -400,14 +448,14 @@ export default function AdminContentPage() {
                 />
               </div>
             </Field>
-            <Field label="Нэр / гарчиг">
+            <Field label="Нэр / гарчиг" error={siteFieldErrors.aboutName}>
               <input
                 className={inputCls}
                 value={form.aboutName}
                 onChange={(e) => set({ aboutName: e.target.value })}
               />
             </Field>
-            <Field label="Богино танилцуулга">
+            <Field label="Богино танилцуулга" error={siteFieldErrors.aboutSubtitle}>
               <textarea
                 rows={3}
                 className={inputCls}
@@ -415,7 +463,7 @@ export default function AdminContentPage() {
                 onChange={(e) => set({ aboutSubtitle: e.target.value })}
               />
             </Field>
-            <Field label="Нэмэлт био (заавал биш)">
+            <Field label="Нэмэлт био (заавал биш)" error={siteFieldErrors.aboutBio}>
               <textarea
                 rows={3}
                 className={inputCls}
@@ -472,14 +520,14 @@ export default function AdminContentPage() {
               Холбоо барих
             </h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="И-мэйл">
+              <Field label="И-мэйл" error={siteFieldErrors["contact.email"]}>
                 <input
                   className={inputCls}
                   value={form.contact.email}
                   onChange={(e) => setContact({ email: e.target.value })}
                 />
               </Field>
-              <Field label="Студио">
+              <Field label="Студио" error={siteFieldErrors["contact.studio"]}>
                 <input
                   className={inputCls}
                   value={form.contact.studio}
@@ -487,7 +535,7 @@ export default function AdminContentPage() {
                 />
               </Field>
             </div>
-            <Field label="Цаг">
+            <Field label="Цаг" error={siteFieldErrors["contact.hours"]}>
               <input
                 className={inputCls}
                 value={form.contact.hours}

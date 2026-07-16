@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ZodError } from "zod";
 import AdminShell from "@/app/admin/layout";
 import { apiList, apiGet, apiPost, apiPatch, apiDelete, ApiError } from "@/lib/api-client";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary";
+import { artworkInputSchema } from "@/lib/schemas";
 import type { ApiArtwork, ApiCategory, PaginationMeta } from "@/types/api";
 
 const STATUSES = ["DRAFT", "PENDING", "PUBLISHED", "REJECTED", "SOLD", "ARCHIVED"] as const;
@@ -29,6 +31,7 @@ export default function AdminArtworksPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
 
@@ -130,6 +133,7 @@ export default function AdminArtworksPage() {
     setEditing(null);
     setShowForm(false);
     setError(null);
+    setFieldErrors({});
   };
 
   const openCreate = () => {
@@ -161,8 +165,44 @@ export default function AdminArtworksPage() {
     setShowForm(true);
   };
 
+  const validateArtwork = (): boolean => {
+    try {
+      const data = {
+        title: form.title,
+        description: form.description || undefined,
+        image: form.images[0] ?? form.image ?? "",
+        images: form.images.length ? form.images : undefined,
+        price: Number(form.price),
+        categoryId: form.categoryId || undefined,
+        categoryName: form.categoryName || undefined,
+        medium: form.medium || undefined,
+        width: form.width ? Number(form.width) : undefined,
+        height: form.height ? Number(form.height) : undefined,
+        year: form.year ? Number(form.year) : undefined,
+        status: form.status,
+        isFeatured: form.isFeatured,
+      };
+      artworkInputSchema.parse(data);
+      setFieldErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const errors: Record<string, string> = {};
+        for (const issue of err.issues) {
+          const key = issue.path.join(".") || "_";
+          errors[key] = issue.message;
+        }
+        setFieldErrors(errors);
+      } else {
+        setError(err instanceof Error ? err.message : "Validation failed");
+      }
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateArtwork()) return;
     setSaving(true);
     setError(null);
     try {
@@ -264,7 +304,7 @@ export default function AdminArtworksPage() {
         {showForm && (
           <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-card p-6 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Гарчиг" required>
+              <Field label="Гарчиг" required error={fieldErrors.title}>
                 <input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -326,7 +366,7 @@ export default function AdminArtworksPage() {
                   )}
                 </div>
               </Field>
-              <Field label="Үнэ">
+              <Field label="Үнэ" error={fieldErrors.price}>
                 <input
                   type="number"
                   value={form.price}
@@ -376,7 +416,60 @@ export default function AdminArtworksPage() {
                   <span className="text-sm text-primary/70">Featured дэлгүүрт харуулах</span>
                 </label>
               </Field>
-              <Field label="Дэлгэрэнгүй">
+              <Field label="Техник" error={fieldErrors.medium}>
+                <input
+                  value={form.medium}
+                  onChange={(e) => setForm({ ...form, medium: e.target.value })}
+                  className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label="Он" error={fieldErrors.year}>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={form.year}
+                    onChange={(e) => setForm({ ...form, year: e.target.value })}
+                    className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.createElement("input");
+                      input.type = "date";
+                      input.style.position = "fixed";
+                      input.style.left = "-9999px";
+                      document.body.appendChild(input);
+                      input.showPicker?.();
+                      input.addEventListener("change", () => {
+                        const y = input.value ? String(new Date(input.value).getFullYear()) : "";
+                        setForm((f) => ({ ...f, year: y }));
+                        document.body.removeChild(input);
+                      });
+                    }}
+                    className="rounded-xl border border-border bg-white px-3 py-2 text-sm hover:border-accent"
+                    title="Сараар сонгох"
+                  >
+                    📅
+                  </button>
+                </div>
+              </Field>
+              <Field label="Хэмжээ (өргөн)" error={fieldErrors.width}>
+                <input
+                  type="number"
+                  value={form.width}
+                  onChange={(e) => setForm({ ...form, width: e.target.value })}
+                  className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label="Хэмжээ (өндөр)" error={fieldErrors.height}>
+                <input
+                  type="number"
+                  value={form.height}
+                  onChange={(e) => setForm({ ...form, height: e.target.value })}
+                  className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label="Дэлгэрэнгүй" error={fieldErrors.description}>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -503,13 +596,14 @@ export default function AdminArtworksPage() {
   );
 }
 
-function Field({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
+function Field({ label, children, required, error }: { label: string; children: React.ReactNode; required?: boolean; error?: string }) {
   return (
     <div className="space-y-1">
       <label className="block text-sm font-medium text-primary/70">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }

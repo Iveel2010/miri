@@ -2,7 +2,8 @@ import { parseJson } from "@/lib/http";
 import { validate } from "@/lib/validation";
 import { ApiResponse } from "@/lib/response";
 import { requireRole } from "@/lib/auth";
-import { siteSettingService, siteSettingsSchema, heroSettingsSchema } from "@/services/site-setting.service";
+import { siteSettingService } from "@/services/site-setting.service";
+import { siteSettingsSchema, heroSettingsSchema } from "@/lib/schemas";
 
 export const siteSettingController = {
   /** GET /api/site-settings/hero */

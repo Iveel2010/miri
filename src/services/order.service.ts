@@ -4,6 +4,7 @@ import { orderRepository } from "@/repositories/order.repository";
 import { analyticsRepository } from "@/repositories/analytics.repository";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import type { OrderStatus } from "@prisma/client";
+import { trigger } from "@/lib/pusher";
 
 export const purchaseSchema = z.object({
   items: z.array(z.object({ artworkId: z.string().min(1), quantity: z.number().int().positive().max(10).optional() })).min(1),
@@ -71,6 +72,17 @@ export const orderService = {
       }
 
       await analyticsRepository.track("PURCHASE", { userId, metadata: { orderId: order.id, total } });
+
+      trigger("private-admin", "new-order", {
+        id: order.id,
+        total,
+        itemCount: order.items.length,
+        userId: order.userId,
+        userName: order.user?.name,
+        createdAt: order.createdAt,
+      });
+
+      trigger("private-admin", "stats-update", {});
 
       return order;
     });

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-client";
+import { pusherClientEnabled } from "@/hooks/use-realtime";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Хянах самбар", icon: DashboardIcon },
@@ -118,6 +119,15 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, status } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: string }[]>([]);
+
+  const addToast = useCallback((message: string, type = "info") => {
+    const id = Date.now().toString() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  }, []);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -125,6 +135,44 @@ export default function AdminShell({ children }: { children: ReactNode }) {
       router.replace("/login?next=/admin");
     }
   }, [user, status, router]);
+
+  useEffect(() => {
+    if (!pusherClientEnabled) return;
+
+    let pusher: import("pusher-js").default | null = null;
+    let channelInstance: import("pusher-js").Channel | null = null;
+
+    const init = async () => {
+      const PusherModule = (await import("pusher-js")).default;
+      pusher = new PusherModule(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      });
+
+      channelInstance = pusher.subscribe("private-admin");
+
+      channelInstance.bind("new-purchase-request", () => {
+        addToast("Шинэ худалдан авах хүсэлт ирлээ!", "purchase");
+      });
+
+      channelInstance.bind("new-contact-message", () => {
+        addToast("Шинэ зурвас ирлээ!", "contact");
+      });
+
+      channelInstance.bind("new-order", () => {
+        addToast("Шинэ захиалга бүртгэгдлээ!", "order");
+      });
+    };
+
+    init();
+
+    return () => {
+      if (channelInstance && pusher) {
+        channelInstance.unbind_all?.();
+        pusher.unsubscribe("private-admin");
+        pusher.disconnect();
+      }
+    };
+  }, [addToast]);
 
   const isActive = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
@@ -262,6 +310,19 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         </header>
         <main className="p-4 md:p-8">{children}</main>
       </div>
+
+      {toasts.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              className="animate-in slide-in-from-bottom-2 rounded-xl border border-border bg-card px-4 py-3 shadow-lg"
+            >
+              <p className="text-sm font-medium text-primary">{toast.message}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

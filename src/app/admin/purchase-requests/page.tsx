@@ -8,6 +8,7 @@ import { apiGet, apiPatch, apiDelete } from "@/lib/api-client";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary";
 import type { ApiPurchaseRequestList } from "@/types/api";
 import Reveal from "@/components/Reveal";
+import { pusherClientEnabled } from "@/hooks/use-realtime";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Бүгд" },
@@ -107,6 +108,35 @@ export default function AdminPurchaseRequestsPage() {
         .catch(() => active && setError(true));
     };
     tick();
+
+    if (pusherClientEnabled) {
+      let pusher: import("pusher-js").default | null = null;
+      let channelInstance: import("pusher-js").Channel | null = null;
+
+      const init = async () => {
+        const PusherModule = (await import("pusher-js")).default;
+        pusher = new PusherModule(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+        });
+        channelInstance = pusher.subscribe("private-admin");
+
+        channelInstance.bind("new-purchase-request", () => {
+          tick();
+        });
+      };
+
+      init();
+
+      return () => {
+        active = false;
+        if (channelInstance && pusher) {
+          channelInstance.unbind("new-purchase-request");
+          pusher.unsubscribe("private-admin");
+          pusher.disconnect();
+        }
+      };
+    }
+
     const t = setInterval(tick, 8000);
     return () => {
       active = false;

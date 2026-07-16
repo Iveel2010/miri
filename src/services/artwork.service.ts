@@ -1,24 +1,11 @@
 import { z } from "zod";
+import { artworkInputSchema } from "@/lib/schemas";
 import { artworkRepository } from "@/repositories/artwork.repository";
 import { categoryRepository } from "@/repositories/category.repository";
 import { uniqueSlug } from "@/utils/slug";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { trigger } from "@/lib/pusher";
 import type { ArtworkStatus } from "@prisma/client";
-
-export const artworkInputSchema = z.object({
-  title: z.string().min(2).max(160),
-  description: z.string().max(2000).optional(),
-  image: z.string().min(1),
-  images: z.array(z.string().min(1)).optional(),
-  price: z.coerce.number().nonnegative(),
-  categoryId: z.string().optional(),
-  categoryName: z.string().optional(),
-  medium: z.string().max(80).optional(),
-  width: z.coerce.number().positive().optional(),
-  height: z.coerce.number().positive().optional(),
-  year: z.coerce.number().int().min(0).max(new Date().getFullYear()).optional(),
-  status: z.enum(["DRAFT", "PENDING", "PUBLISHED", "ARCHIVED"]).optional(),
-});
 
 export const artworkService = {
   async getByIdOrSlug(idOrSlug: string, incrementView = false) {
@@ -89,7 +76,7 @@ export const artworkService = {
       category = existing;
     }
 
-    return artworkRepository.create({
+    const artwork = await artworkRepository.create({
       title: input.title,
       slug,
       description: input.description,
@@ -104,6 +91,9 @@ export const artworkService = {
       status: (input.status as ArtworkStatus) ?? "DRAFT",
       artist: { connect: { id: artistId } },
     });
+
+    trigger("private-admin", "stats-update", {});
+    return artwork;
   },
 
   async update(artworkId: string, actorId: string, input: Partial<z.infer<typeof artworkInputSchema>>, isAdmin = false) {
@@ -135,7 +125,9 @@ export const artworkService = {
     if (category) data.category = { connect: { id: category.id } };
     else if (categoryId === null || categoryName === null) data.category = { disconnect: true };
 
-    return artworkRepository.update(artworkId, data);
+    const artwork = await artworkRepository.update(artworkId, data);
+    trigger("private-admin", "stats-update", {});
+    return artwork;
   },
 
   async publish(artworkId: string, actorId: string, isAdmin = false) {
@@ -145,7 +137,9 @@ export const artworkService = {
       throw new ForbiddenError("You can only publish your own artwork");
     }
     const status: ArtworkStatus = "PENDING";
-    return artworkRepository.updateStatus(artworkId, status);
+    const artwork = await artworkRepository.updateStatus(artworkId, status);
+    trigger("private-admin", "stats-update", {});
+    return artwork;
   },
 
   async saveDraft(artworkId: string, actorId: string, input: Partial<z.infer<typeof artworkInputSchema>>, isAdmin = false) {
@@ -154,7 +148,9 @@ export const artworkService = {
     if (!isAdmin && existing.artistId !== actorId) {
       throw new ForbiddenError("You can only edit your own artwork");
     }
-    return artworkRepository.update(artworkId, { ...input, status: "DRAFT" });
+    const artwork = await artworkRepository.update(artworkId, { ...input, status: "DRAFT" });
+    trigger("private-admin", "stats-update", {});
+    return artwork;
   },
 
   async remove(artworkId: string, actorId: string, isAdmin = false) {
@@ -163,7 +159,8 @@ export const artworkService = {
     if (!isAdmin && existing.artistId !== actorId) {
       throw new ForbiddenError("You can only delete your own artwork");
     }
-    return artworkRepository.remove(artworkId);
+    await artworkRepository.remove(artworkId);
+    trigger("private-admin", "stats-update", {});
   },
 
   async topArtworks(limit = 10) {

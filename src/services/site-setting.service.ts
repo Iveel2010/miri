@@ -1,4 +1,3 @@
-import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { siteSettingRepository } from "@/repositories/site-setting.repository";
 
@@ -63,37 +62,6 @@ export const defaultSiteSettings: SiteSettings = {
     ],
   },
 };
-
-export const siteSettingsSchema = z.object({
-  logoText: z.string().max(40).optional(),
-  logoImage: z.string().optional(),
-  artistPhoto: z.string().optional(),
-  aboutName: z.string().max(120).optional(),
-  aboutSubtitle: z.string().max(2000).optional(),
-  aboutBio: z.string().max(4000).optional(),
-  aboutStats: z
-    .array(z.object({ value: z.string().max(20), label: z.string().max(40), icon: z.string().max(8) }))
-    .max(6)
-    .optional(),
-  contact: z
-    .object({
-      email: z.string().max(120),
-      studio: z.string().max(120),
-      hours: z.string().max(120),
-      socials: z
-        .array(z.object({ label: z.string().max(40), href: z.string().max(200) }))
-        .max(8),
-    })
-    .optional(),
-});
-
-export const heroSettingsSchema = z.object({
-  heroImage: z.string().max(500).optional(),
-  heroTitle: z.string().max(200).optional(),
-  heroSubtitle: z.string().max(2000).optional(),
-  heroBadge: z.string().max(40).optional(),
-  heroCaption: z.string().max(200).optional(),
-});
 
 export const siteSettingService = {
   async getHero() {

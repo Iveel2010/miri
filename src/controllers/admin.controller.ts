@@ -2,7 +2,8 @@ import { parseJson } from "@/lib/http";
 import { validate, num, buildMeta } from "@/lib/validation";
 import { ApiResponse } from "@/lib/response";
 import { requireRole } from "@/lib/auth";
-import { adminService, artworkInputSchema, artistContactSchema } from "@/services/admin.service";
+import { adminService } from "@/services/admin.service";
+import { artworkInputSchema, artistContactSchema } from "@/lib/schemas";
 import type { Role } from "@prisma/client";
 
 export const adminController = {

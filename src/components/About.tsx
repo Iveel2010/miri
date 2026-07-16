@@ -78,9 +78,9 @@ export default async function About() {
             <p className="text-sm leading-relaxed text-primary/60">{aboutBio}</p>
           )}
           <dl className="grid grid-cols-3 gap-4 text-center">
-            {stats.map((stat) => (
+            {stats.map((stat, i) => (
               <div
-                key={stat.label}
+                key={i}
                 className="rounded-2xl bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
               >
                 <dt className="sr-only">{stat.label}</dt>

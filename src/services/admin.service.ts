@@ -1,41 +1,13 @@
 import { z } from "zod";
+import { artworkInputSchema, artistContactSchema } from "@/lib/schemas";
 import { categoryRepository } from "@/repositories/category.repository";
 import { analyticsService } from "@/services/analytics.service";
 import { artworkRepository } from "@/repositories/artwork.repository";
 import { userRepository } from "@/repositories/user.repository";
 import { uniqueSlug } from "@/utils/slug";
 import { NotFoundError } from "@/lib/errors";
+import { trigger } from "@/lib/pusher";
 import type { ArtworkStatus, Role } from "@prisma/client";
-
-export const artworkInputSchema = z.object({
-  title: z.string().min(2).max(160),
-  description: z.string().max(2000).optional(),
-  image: z.string().min(1),
-  images: z.array(z.string().min(1)).optional(),
-  price: z.coerce.number().nonnegative(),
-  categoryId: z.string().optional(),
-  categoryName: z.string().optional(),
-  medium: z.string().max(80).optional(),
-  width: z.coerce.number().positive().optional(),
-  height: z.coerce.number().positive().optional(),
-  year: z.coerce.number().int().min(0).max(new Date().getFullYear()).optional(),
-  status: z.enum(["DRAFT", "PENDING", "PUBLISHED", "REJECTED", "SOLD", "ARCHIVED"]).optional(),
-  isFeatured: z.boolean().optional(),
-});
-
-export const artistContactSchema = z.object({
-  phone: z.string().max(40).optional().nullable(),
-  email: z.string().max(120).optional().nullable(),
-  whatsapp: z.string().max(40).optional().nullable(),
-  telegram: z.string().max(40).optional().nullable(),
-  facebook: z.string().max(200).optional().nullable(),
-  instagram: z.string().max(200).optional().nullable(),
-  location: z.string().max(120).optional().nullable(),
-  preferredContactMethod: z.enum(["PHONE", "EMAIL", "FACEBOOK", "INSTAGRAM", "TELEGRAM", "WHATSAPP"]).optional().nullable(),
-  responseTime: z.string().max(120).optional().nullable(),
-  showPhone: z.boolean().optional(),
-  showEmail: z.boolean().optional(),
-});
 
 export const adminService = {
   async getStats() {
@@ -93,7 +65,7 @@ export const adminService = {
       category = existing;
     }
 
-    return artworkRepository.create({
+    const artwork = await artworkRepository.create({
       title: input.title,
       slug,
       description: input.description,
@@ -108,6 +80,9 @@ export const adminService = {
       status: (input.status as ArtworkStatus) ?? "DRAFT",
       artist: { connect: { id: adminId } },
     });
+
+    trigger("private-admin", "stats-update", {});
+    return artwork;
   },
 
   async getArtwork(id: string) {
@@ -138,13 +113,16 @@ export const adminService = {
     if (category) data.category = { connect: { id: category.id } };
     else if (categoryId === null || categoryName === null) data.category = { disconnect: true };
 
-    return artworkRepository.update(id, data);
+    const artwork = await artworkRepository.update(id, data);
+    trigger("private-admin", "stats-update", {});
+    return artwork;
   },
 
   async deleteArtwork(id: string) {
     const existing = await artworkRepository.findById(id);
     if (!existing) throw new NotFoundError("Artwork not found");
-    return artworkRepository.remove(id);
+    await artworkRepository.remove(id);
+    trigger("private-admin", "stats-update", {});
   },
 
   async listArtists(params: { page: number; limit: number; search?: string; role?: Role }) {
@@ -171,7 +149,8 @@ export const adminService = {
   async updateArtistContact(id: string, input: z.infer<typeof artistContactSchema>) {
     const existing = await userRepository.findById(id);
     if (!existing) throw new NotFoundError("Artist not found");
-    return userRepository.update(id, input as Record<string, unknown>);
+    const artist = await userRepository.update(id, input as Record<string, unknown>);
+    trigger("private-admin", "stats-update", {});
+    return artist;
   },
-
 };

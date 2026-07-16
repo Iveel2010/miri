@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NotFoundError } from "@/lib/errors";
 import { purchaseRequestRepository } from "@/repositories/purchase-request.repository";
 import { notificationRepository } from "@/repositories/notification.repository";
+import { trigger } from "@/lib/pusher";
 
 export const purchaseRequestInputSchema = z.object({
   buyerName: z.string().min(1, "Нэр шаардлагатай").max(100),
@@ -35,6 +36,18 @@ export const purchaseRequestService = {
       body: `${input.buyerName} «${artwork.title}» бүтээлийг худалдан авахыг хүсч байна.`,
       relatedId: request.id,
     });
+
+    trigger("private-admin", "new-purchase-request", {
+      id: request.id,
+      buyerName: request.buyerName,
+      buyerPhone: request.buyerPhone,
+      artworkId: artwork.id,
+      artworkTitle: artwork.title,
+      status: request.status,
+      createdAt: request.createdAt,
+    });
+
+    trigger("private-admin", "stats-update", {});
 
     return request;
   },

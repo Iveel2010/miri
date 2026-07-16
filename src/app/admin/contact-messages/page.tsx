@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiGet, apiDelete } from "@/lib/api-client";
 import type { ApiContactMessageList } from "@/types/api";
 import Reveal from "@/components/Reveal";
+import { pusherClientEnabled } from "@/hooks/use-realtime";
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -28,6 +29,34 @@ export default function AdminContactMessagesPage() {
 
   useEffect(() => {
     refresh();
+
+    if (pusherClientEnabled) {
+      let pusher: import("pusher-js").default | null = null;
+      let channelInstance: import("pusher-js").Channel | null = null;
+
+      const init = async () => {
+        const PusherModule = (await import("pusher-js")).default;
+        pusher = new PusherModule(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+        });
+        channelInstance = pusher.subscribe("private-admin");
+
+        channelInstance.bind("new-contact-message", () => {
+          refresh();
+        });
+      };
+
+      init();
+
+      return () => {
+        if (channelInstance && pusher) {
+          channelInstance.unbind("new-contact-message");
+          pusher.unsubscribe("private-admin");
+          pusher.disconnect();
+        }
+      };
+    }
+
     const t = setInterval(refresh, 8000);
     return () => clearInterval(t);
   }, []);

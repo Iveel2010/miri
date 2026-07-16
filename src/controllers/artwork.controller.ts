@@ -2,7 +2,8 @@ import { parseJson } from "@/lib/http";
 import { validate, num, buildMeta } from "@/lib/validation";
 import { ApiResponse } from "@/lib/response";
 import { requireUser } from "@/lib/auth";
-import { artworkService, artworkInputSchema } from "@/services/artwork.service";
+import { artworkService } from "@/services/artwork.service";
+import { artworkInputSchema } from "@/lib/schemas";
 
 // ============================================================================
 // Artwork controllers — public browse + artist CRUD.

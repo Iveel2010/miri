@@ -1,5 +1,3 @@
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
-
 export function isCloudinaryUrl(url: string): boolean {
   return url.includes("res.cloudinary.com");
 }
@@ -9,8 +7,14 @@ export function extractPublicId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+export function extractCloudName(url: string): string | null {
+  const m = url.match(/res\.cloudinary\.com\/([^/]+)\//);
+  return m ? m[1] : null;
+}
+
 export function buildCloudinaryUrl(
   publicId: string,
+  cloudName: string,
   opts: { width?: number; height?: number; quality?: string | number; format?: string; crop?: string } = {}
 ): string {
   const transforms: string[] = [];
@@ -26,16 +30,19 @@ export function buildCloudinaryUrl(
   transforms.push("q_auto", "f_auto");
 
   const transform = transforms.join(",");
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${transform}/${publicId}`;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${transform}/${publicId}`;
 }
 
 export function optimizeCloudinaryUrl(url: string): string {
-  if (!isCloudinaryUrl(url) || !CLOUD_NAME) return url;
+  if (!isCloudinaryUrl(url)) return url;
 
   const publicId = extractPublicId(url);
   if (!publicId) return url;
 
   if (url.includes("/c_") || url.includes("/q_auto")) return url;
 
-  return buildCloudinaryUrl(publicId);
+  const cloudName = extractCloudName(url) ?? process.env.CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) return url;
+
+  return buildCloudinaryUrl(publicId, cloudName);
 }

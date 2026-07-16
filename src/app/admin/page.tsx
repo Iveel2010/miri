@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AdminShell from "@/app/admin/layout";
 import { apiGet, ApiError } from "@/lib/api-client";
+import { pusherClientEnabled } from "@/hooks/use-realtime";
 
 interface AdminStats {
   totals: {
@@ -95,10 +96,56 @@ function DashboardContent() {
       }
     };
     fetchStats();
-    intervalRef.current = setInterval(fetchStats, 30000);
+
+    if (!pusherClientEnabled) {
+      intervalRef.current = setInterval(fetchStats, 5000);
+    }
+
     return () => {
       active = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pusherClientEnabled) return;
+
+    let pusher: import("pusher-js").default | null = null;
+    let channelInstance: import("pusher-js").Channel | null = null;
+
+    const init = async () => {
+      const PusherModule = (await import("pusher-js")).default;
+      pusher = new PusherModule(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      });
+
+      channelInstance = pusher.subscribe("private-admin");
+
+      const refresh = async () => {
+        try {
+          const data = await apiGet<AdminStats>("/api/admin/stats");
+          setStats(data);
+          setLastUpdated(new Date().toLocaleTimeString("mn-MN"));
+          setError(null);
+        } catch (e) {
+          setError(e instanceof ApiError ? e.message : "Ачааллахад алдаа гарлаа.");
+        }
+      };
+
+      channelInstance.bind("stats-update", refresh);
+      channelInstance.bind("new-purchase-request", refresh);
+      channelInstance.bind("new-contact-message", refresh);
+      channelInstance.bind("new-order", refresh);
+    };
+
+    init();
+
+    return () => {
+      if (channelInstance && pusher) {
+        channelInstance.unbind_all?.();
+        pusher.unsubscribe("private-admin");
+        pusher.disconnect();
+      }
     };
   }, []);
 
